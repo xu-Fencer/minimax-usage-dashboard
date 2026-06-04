@@ -1,0 +1,135 @@
+from app.db import get_conn
+
+
+def _to_iso(s: str | None) -> str | None:
+    if s is None:
+        return None
+    return s.replace(" ", "T")
+
+
+def summary() -> dict:
+    with get_conn() as conn:
+        row = conn.execute(
+            """SELECT
+                COUNT(*) AS total_buckets,
+                COALESCE(SUM(cost), 0) AS actual_cost,
+                COALESCE(SUM(cost_after_voucher), 0) AS cost_after_voucher,
+                COALESCE(SUM(input_tokens), 0) AS total_input,
+                COALESCE(SUM(output_tokens), 0) AS total_output,
+                MIN(bucket_start) AS earliest,
+                MAX(bucket_start) AS latest
+            FROM usage_records"""
+        ).fetchone()
+    return {
+        "total_buckets": row["total_buckets"] or 0,
+        "actual_cost": float(row["actual_cost"] or 0),
+        "cost_after_voucher": float(row["cost_after_voucher"] or 0),
+        "total_input": int(row["total_input"] or 0),
+        "total_output": int(row["total_output"] or 0),
+        "earliest": _to_iso(row["earliest"]),
+        "latest": _to_iso(row["latest"]),
+    }
+
+
+def daily_series() -> list[dict]:
+    with get_conn() as conn:
+        cur = conn.execute(
+            """SELECT
+                DATE(bucket_start) AS day,
+                SUM(input_tokens) AS input_tokens,
+                SUM(output_tokens) AS output_tokens,
+                SUM(total_tokens) AS total_tokens,
+                SUM(cost) AS actual_cost
+            FROM usage_records
+            GROUP BY DATE(bucket_start)
+            ORDER BY day"""
+        )
+        return [
+            {
+                "day": r["day"],
+                "input_tokens": int(r["input_tokens"] or 0),
+                "output_tokens": int(r["output_tokens"] or 0),
+                "total_tokens": int(r["total_tokens"] or 0),
+                "actual_cost": float(r["actual_cost"] or 0),
+            }
+            for r in cur.fetchall()
+        ]
+
+
+def by_model() -> list[dict]:
+    with get_conn() as conn:
+        cur = conn.execute(
+            "SELECT model, SUM(total_tokens) AS tokens FROM usage_records "
+            "GROUP BY model ORDER BY tokens DESC"
+        )
+        return [{"model": r["model"], "tokens": int(r["tokens"] or 0)} for r in cur.fetchall()]
+
+
+def by_endpoint() -> list[dict]:
+    with get_conn() as conn:
+        cur = conn.execute(
+            "SELECT endpoint, SUM(total_tokens) AS tokens FROM usage_records "
+            "GROUP BY endpoint ORDER BY tokens DESC"
+        )
+        return [{"endpoint": r["endpoint"], "tokens": int(r["tokens"] or 0)} for r in cur.fetchall()]
+
+
+def heatmap() -> list[dict]:
+    with get_conn() as conn:
+        cur = conn.execute(
+            """SELECT
+                CAST(strftime('%w', bucket_start) AS INTEGER) AS dow,
+                CAST(strftime('%H', bucket_start) AS INTEGER) AS hour,
+                SUM(total_tokens) AS tokens
+            FROM usage_records
+            GROUP BY dow, hour
+            ORDER BY dow, hour"""
+        )
+        return [
+            {"dow": r["dow"], "hour": r["hour"], "tokens": int(r["tokens"] or 0)}
+            for r in cur.fetchall()
+        ]
+
+
+def paged_records(page: int = 1, size: int = 50,
+                  model: str | None = None, endpoint: str | None = None,
+                  date_from: str | None = None, date_to: str | None = None) -> dict:
+    where = []
+    args: list = []
+    if model:
+        where.append("model = ?")
+        args.append(model)
+    if endpoint:
+        where.append("endpoint = ?")
+        args.append(endpoint)
+    if date_from:
+        where.append("DATE(bucket_start) >= ?")
+        args.append(date_from)
+    if date_to:
+        where.append("DATE(bucket_start) <= ?")
+        args.append(date_to)
+    where_sql = (" WHERE " + " AND ".join(where)) if where else ""
+
+    with get_conn() as conn:
+        total = conn.execute(f"SELECT COUNT(*) AS n FROM usage_records{where_sql}", args).fetchone()["n"]
+        offset = (page - 1) * size
+        cur = conn.execute(
+            f"""SELECT bucket_start, account, api_key_name, endpoint, model,
+                       input_tokens, output_tokens, total_tokens, cost
+                FROM usage_records{where_sql}
+                ORDER BY bucket_start DESC
+                LIMIT ? OFFSET ?""",
+            args + [size, offset],
+        )
+        rows = [dict(r) for r in cur.fetchall()]
+    return {"total": total, "page": page, "size": size, "rows": rows}
+
+
+def list_records() -> list[dict]:
+    with get_conn() as conn:
+        cur = conn.execute(
+            "SELECT bucket_start, account, api_key_name, endpoint, model, "
+            "input_tokens, output_tokens, total_tokens, cost "
+            "FROM usage_records ORDER BY bucket_start"
+        )
+        return [dict(r) for r in cur.fetchall()]
