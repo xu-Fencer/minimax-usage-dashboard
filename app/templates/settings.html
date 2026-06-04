@@ -1,1 +1,72 @@
-<!doctype html><html><body><h1>Settings (placeholder)</h1></body></html>
+{% extends "base.html" %}
+{% block title %}设置 - MiniMax 用量{% endblock %}
+{% block content %}
+<div class="section">
+  <h2>📥 导入 CSV</h2>
+  <div id="drop-zone" style="border:2px dashed var(--border);padding:40px;text-align:center;border-radius:8px;cursor:pointer">
+    <p>拖拽 CSV 到这里 或 <button class="primary" onclick="document.getElementById('file-input').click()">选择文件</button></p>
+    <input type="file" id="file-input" accept=".csv" style="display:none">
+  </div>
+  <div id="import-result" style="margin-top:12px"></div>
+</div>
+
+<div class="section">
+  <h2>📋 导入历史</h2>
+  <table id="history-table">
+    <thead><tr>
+      <th>时间</th><th>文件名</th><th>新增</th><th>跳过</th><th>错误</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="section">
+  <h2>📊 数据概览</h2>
+  <div id="stats">加载中...</div>
+</div>
+
+<div class="section">
+  <h2>💰 计费配置</h2>
+  <div style="margin-bottom:12px">
+    模式:
+    <label><input type="radio" name="bm" value="auto" onchange="saveSettings()"> 自动</label>
+    <label><input type="radio" name="bm" value="pay_as_you_go" onchange="saveSettings()"> 按量计费</label>
+    <label><input type="radio" name="bm" value="token_plan" onchange="saveSettings()"> Token 套餐</label>
+    <span id="current-mode" style="margin-left:12px;color:var(--muted)"></span>
+  </div>
+  <h3 style="font-size:14px;margin-top:20px">模型价格表 (CNY / 1k tokens)</h3>
+  <button onclick="syncPricing()" style="margin-bottom:12px">从数据中拉取 (model, endpoint) 组合</button>
+  <table id="pricing-table" style="font-size:12px">
+    <thead><tr>
+      <th>模型</th><th>接口</th>
+      <th>输入</th><th>输出</th><th>缓存读</th><th>缓存写</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+  <p style="color:var(--muted);font-size:12px;margin-top:8px">
+    说明: 不同 endpoint 类型适用的字段不同:
+    <code>chatcompletion-v2</code> 用输入/输出，
+    <code>cache-read</code> 用缓存读，
+    <code>cache-create</code> 用缓存写。
+  </p>
+  <button class="primary" onclick="savePricing()">保存价格</button>
+</div>
+
+<div class="section">
+  <h2>🎨 外观</h2>
+  <select onchange="window.__setTheme(this.value)">
+    <option value="system">跟随系统</option>
+    <option value="light">浅色</option>
+    <option value="dark">深色</option>
+  </select>
+</div>
+
+<div class="section" style="border-color:var(--danger)">
+  <h2 style="color:var(--danger)">⚠️ 危险区</h2>
+  <button class="danger" onclick="clearAll()">清空所有数据</button>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/import.js"></script>
+<script src="/static/js/settings.js"></script>
+{% endblock %}
