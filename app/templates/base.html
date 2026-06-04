@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}MiniMax 用量看板{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/base.css">
+  <script src="/static/js/theme.js"></script>
+</head>
+<body>
+  <div class="nav">
+    <h1>MiniMax 用量看板</h1>
+    <a href="/dashboard" class="{% if request.url.path.startswith('/dashboard') %}active{% endif %}">看板</a>
+    <a href="/settings" class="{% if request.url.path.startswith('/settings') %}active{% endif %}">设置</a>
+    <div class="spacer"></div>
+    <button id="theme-btn" onclick="cycleTheme()">🌙</button>
+  </div>
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+  <div id="toast" class="toast"></div>
+  <script>
+    function cycleTheme() {
+      const cur = window.__getTheme();
+      const next = cur === "dark" ? "light" : cur === "light" ? "system" : "dark";
+      window.__setTheme(next);
+    }
+    function toast(msg, type) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.className = "toast show " + (type || "");
+      setTimeout(() => t.className = "toast", 3000);
+    }
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

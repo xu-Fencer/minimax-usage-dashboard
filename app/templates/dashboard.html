@@ -1,1 +1,69 @@
-<!doctype html><html><body><h1>Dashboard (placeholder)</h1></body></html>
+{% extends "base.html" %}
+{% block title %}看板 - MiniMax 用量{% endblock %}
+{% block content %}
+<div class="cards">
+  <div class="card">
+    <div class="label">累计消费 <span id="mode-badge" class="badge"></span></div>
+    <div class="value" id="actual-cost">¥0.00</div>
+    <div class="sub" id="time-range">-</div>
+  </div>
+  <div class="card">
+    <div class="label">估算价值</div>
+    <div class="value" id="estimated-cost">¥0.00</div>
+    <div class="sub" id="estimated-sub">按配置价格计算</div>
+  </div>
+</div>
+<div id="saving-banner" class="section" style="display:none">
+  <strong>💡 节省: <span id="saving-amount">¥0.00</span></strong>
+  <span style="color:var(--muted);margin-left:8px">token_plan 模式下: 估算价值 = 实际价值</span>
+</div>
+
+<div class="section">
+  <h2>每日用量</h2>
+  <div id="daily-cost-line" class="chart"></div>
+</div>
+
+<div class="row-2">
+  <div class="section">
+    <h2>模型分布</h2>
+    <div id="model-pie" class="chart"></div>
+  </div>
+  <div class="section">
+    <h2>接口分布</h2>
+    <div id="endpoint-pie" class="chart"></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>7×24 使用热力图</h2>
+  <div id="heatmap" class="chart" style="height:240px"></div>
+</div>
+
+<div class="section">
+  <h2>原始数据</h2>
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <select id="filter-model"><option value="">全部模型</option></select>
+    <select id="filter-endpoint"><option value="">全部接口</option></select>
+    <input type="date" id="filter-from">
+    <input type="date" id="filter-to">
+    <button class="primary" onclick="loadRecords()">应用</button>
+  </div>
+  <table id="records-table">
+    <thead><tr>
+      <th>时间</th><th>模型</th><th>接口</th>
+      <th>输入</th><th>输出</th><th>总</th><th>实际</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+  <div id="pager" style="margin-top:12px;display:flex;gap:8px;align-items:center">
+    <button onclick="prevPage()">上一页</button>
+    <span id="page-info">1/1</span>
+    <button onclick="nextPage()">下一页</button>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}
