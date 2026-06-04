@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/usage.db
+data/usage.db-*
+*.egg-info/
+.idea/
+.vscode/
+exports/*.csv
+.playwright-mcp/
+deepseek-*.png
+server-stdout.txt
+server-stderr.txt
