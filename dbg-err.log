@@ -1,0 +1,49 @@
+INFO:     Started server process [32408]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8767 (Press CTRL+C to quit)
+[IMPORT] 文件 debug.csv 有 2 行错误:
+[IMPORT]   #1  row=6  reason=无法识别的时间格式: 'not a valid time'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'coding_plan', '消费接口': 'chatcompletion-v2(Text API)', '消费模型': 'MiniMax-M2.7', '消费金额': '0.0000', '代金券后消费金额': '0.0'}
+[IMPORT]   #2  row=7  reason=could not convert string to float: 'not_a_number'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'coding_plan', '消费接口': 'chatcompletion-v2(Text API)', '消费模型': 'MiniMax-M2.7', '消费金额': 'not_a_number', '代金券后消费金额': '0.0'}
+[IMPORT] 文件 export_bill_1780590422.csv 有 15 行错误:
+[IMPORT]   #1  row=53  reason=时间桶不连续: '2026-05-18 23:00-24:00'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'coding_plan', '消费接口': 'cache-create(Text API)', '消费模型': 'MiniMax-M2.7', '消费金额': '0.0', '代金券后消费金额': '0.0'}
+[IMPORT]   #2  row=54  reason=时间桶不连续: '2026-05-18 23:00-24:00'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'coding_plan', '消费接口': 'cache-read(Text API)', '消费模型': 'MiniMax-M2.7', '消费金额': '0.0', '代金券后消费金额': '0.0'}
+[IMPORT]   #3  row=55  reason=时间桶不连续: '2026-05-18 23:00-24:00'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'coding_plan', '消费接口': 'chatcompletion-v2(Text API)', '消费模型': 'MiniMax-M2.7', '消费金额': '0.0', '代金券后消费金额': '0.0'}
+[IMPORT]   #4  row=60  reason=时间桶不连续: '2026-05-16 23:00-24:00'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'coding_plan', '消费接口': 'cache-read(Text API)', '消费模型': 'MiniMax-M2.7', '消费金额': '0.0', '代金券后消费金额': '0.0'}
+[IMPORT]   #5  row=61  reason=时间桶不连续: '2026-05-16 23:00-24:00'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'coding_plan', '消费接口': 'chatcompletion-v2(Text API)', '消费模型': 'MiniMax-M2.7', '消费金额': '0.0', '代金券后消费金额': '0.0'}
+[IMPORT]   #6  row=62  reason=invalid literal for int() with base 10: '<nil>'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': '', '消费接口': 'code_plan_purchase', '消费模型': 'subscribe', '消费金额': '0.0', '代金券后消费金额': '0.0'}
+[IMPORT]   #7  row=67  reason=时间桶不连续: '2026-05-15 23:00-24:00'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': '', '消费接口': 'cache-read(Text API)', '消费模型': 'MiniMax-M2.7', '消费金额': '0.0', '代金券后消费金额': '0.0'}
+[IMPORT]   #8  row=68  reason=时间桶不连续: '2026-05-15 23:00-24:00'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'coding_plan', '消费接口': 'cache-create(Text API)', '消费模型': 'MiniMax-M2.7', '消费金额': '0.0', '代金券后消费金额': '0.0'}
+[IMPORT]   #9  row=69  reason=时间桶不连续: '2026-05-15 23:00-24:00'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': '', '消费接口': 'chatcompletion-v2(Text API)', '消费模型': 'MiniMax-M2.7', '消费金额': '0.0', '代金券后消费金额': '0.0'}
+[IMPORT]   #10  row=70  reason=时间桶不连续: '2026-05-15 23:00-24:00'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'coding_plan', '消费接口': 'chatcompletion-v2(Text API)', '消费模型': 'MiniMax-M2.7', '消费金额': '0.0', '代金券后消费金额': '0.0'}
+[IMPORT]   #11  row=101  reason=时间桶不连续: '2026-05-11 23:00-24:00'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'coding_plan', '消费接口': 'cache-create(Text API)', '消费模型': 'MiniMax-M2.7', '消费金额': '0.0', '代金券后消费金额': '0.0'}
+[IMPORT]   #12  row=102  reason=时间桶不连续: '2026-05-11 23:00-24:00'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'coding_plan', '消费接口': 'cache-read(Text API)', '消费模型': 'MiniMax-M2.7', '消费金额': '0.0', '代金券后消费金额': '0.0'}
+[IMPORT]   #13  row=103  reason=时间桶不连续: '2026-05-11 23:00-24:00'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'coding_plan', '消费接口': 'chatcompletion-v2(Text API)', '消费模型': 'MiniMax-M2.7', '消费金额': '0.0', '代金券后消费金额': '0.0'}
+[IMPORT]   #14  row=110  reason=时间桶不连续: '2026-05-10 23:00-24:00'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'coding_plan', '消费接口': 'cache-read(Text API)', '消费模型': 'MiniMax-M2.7', '消费金额': '0.0', '代金券后消费金额': '0.0'}
+[IMPORT]   #15  row=111  reason=时间桶不连续: '2026-05-10 23:00-24:00'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'coding_plan', '消费接口': 'chatcompletion-v2(Text API)', '消费模型': 'MiniMax-M2.7', '消费金额': '0.0', '代金券后消费金额': '0.0'}
+[IMPORT] 文件 bad.csv 有 4 行错误:
+[IMPORT]   #1  row=3  reason=could not convert string to float: 'abc'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'k', '消费接口': 'chatcompletion-v2(Text API)', '消费模型': 'M', '消费金额': 'abc', '代金券后消费金额': '0'}
+[IMPORT]   #2  row=4  reason=无法识别的时间格式: 'bad-time'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'k', '消费接口': 'chatcompletion-v2(Text API)', '消费模型': 'M', '消费金额': '0', '代金券后消费金额': '0'}
+[IMPORT]   #3  row=5  reason=invalid literal for int() with base 10: 'xyz'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'k', '消费接口': 'chatcompletion-v2(Text API)', '消费模型': 'M', '消费金额': '0', '代金券后消费金额': '0'}
+[IMPORT]   #4  row=6  reason=时间桶不连续: '2026-06-01 25:00-26:00'
+[IMPORT]      raw={'消费账号': '主账号', '接口密钥名称': 'k', '消费接口': 'chatcompletion-v2(Text API)', '消费模型': 'M', '消费金额': '0', '代金券后消费金额': '0'}

@@ -1,3 +1,5 @@
+import logging
+import sys
 from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
@@ -9,6 +11,13 @@ from app.services.importer import import_records
 from app.services import billing, analytics
 
 router = APIRouter(prefix="/api")
+
+_log = logging.getLogger("minimax.import")
+_log.setLevel(logging.DEBUG)
+if not _log.handlers:
+    _h = logging.StreamHandler(sys.stderr)
+    _h.setFormatter(logging.Formatter("[IMPORT] %(message)s"))
+    _log.addHandler(_h)
 
 
 @router.get("/dashboard")
@@ -67,7 +76,7 @@ def records_api(
 
 
 @router.post("/import")
-async def import_csv(file: UploadFile = File(...)):
+async def import_csv(file: UploadFile = File(...), debug: int = Query(0)):
     if file.size and file.size > MAX_UPLOAD_SIZE:
         raise HTTPException(413, f"文件超过 {MAX_UPLOAD_SIZE // 1024 // 1024} MB")
     content = await file.read()
@@ -82,14 +91,29 @@ async def import_csv(file: UploadFile = File(...)):
         raise HTTPException(400, str(e))
     finally:
         tmp.unlink(missing_ok=True)
+
+    if errors:
+        _log.warning("文件 %s 有 %d 行错误:", file.filename, len(errors))
+        for i, e in enumerate(errors[:20], 1):
+            _log.warning("  #%d  row=%s  reason=%s", i, e.get("row_no"), e.get("reason"))
+            raw = e.get("raw", {})
+            if raw:
+                preview = {k: v for k, v in list(raw.items())[:6]}
+                _log.warning("     raw=%s", preview)
+        if len(errors) > 20:
+            _log.warning("  ... (其余 %d 行省略)", len(errors) - 20)
+
     result = import_records(file.filename or "upload.csv", len(content), rows, errors)
-    return {
+    resp = {
         "filename": result.filename,
         "total_rows": result.total_rows,
         "inserted": result.inserted,
         "skipped": result.skipped,
         "error_rows": result.error_rows,
     }
+    if debug:
+        resp["errors"] = errors
+    return resp
 
 
 @router.get("/settings")
