@@ -28,7 +28,10 @@ def parse_bucket(s: str) -> str:
     if not m:
         raise ParseError(f"无法识别的时间格式: {s!r}")
     y, mo, d, h, h2 = m.groups()
-    if int(h2) != (int(h) + 1) % 24:
+    h_int = int(h)
+    h2_int = int(h2)
+    expected_h2 = 24 if h_int == 23 else h_int + 1
+    if h2_int != expected_h2:
         raise ParseError(f"时间桶不连续: {s!r}")
     return f"{y}-{mo}-{d} {h}:00:00"
 

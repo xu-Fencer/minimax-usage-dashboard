@@ -15,6 +15,15 @@ def test_parse_bucket_midnight():
     assert parse_bucket("2026-05-04 00:00-01:00") == "2026-05-04 00:00:00"
 
 
+def test_parse_bucket_end_of_day():
+    assert parse_bucket("2026-02-25 23:00-24:00") == "2026-02-25 23:00:00"
+
+
+def test_parse_bucket_non_contiguous():
+    with pytest.raises(ParseError, match="时间桶不连续"):
+        parse_bucket("2026-05-04 10:00-12:00")
+
+
 def test_parse_bucket_invalid():
     with pytest.raises(ParseError):
         parse_bucket("not a time")
