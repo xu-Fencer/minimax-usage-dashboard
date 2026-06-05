@@ -12,6 +12,10 @@ exports/*.csv
 deepseek-*.png
 server-stdout.txt
 server-stderr.txt
+e2e-*.png
+dbg-*.log
+server-e2e-*.log
+
 
 e2e-*.png
 server-e2e-*.log
