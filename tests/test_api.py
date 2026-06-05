@@ -25,13 +25,16 @@ def test_import_csv(isolated_db, tmp_path):
 
 def test_pricing_crud(isolated_db):
     r = client.put("/api/pricing", json=[
-        {"model": "M", "endpoint": "chatcompletion-v2",
-         "input_price": 0.001, "output_price": 0.002,
-         "cache_read_price": 0, "cache_write_price": 0}
+        {"model": "M2.7",
+         "input_price": 2.1, "output_price": 8.4,
+         "cache_read_price": 0.42, "cache_write_price": 2.625}
     ])
     assert r.status_code == 200
     r = client.get("/api/pricing")
-    assert len(r.json()) == 1
+    items = r.json()
+    assert len(items) == 1
+    assert items[0]["model"] == "M2.7"
+    assert items[0]["input_price"] == 2.1
 
 
 def test_settings(isolated_db):

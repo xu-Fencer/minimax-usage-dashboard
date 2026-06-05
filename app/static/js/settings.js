@@ -52,11 +52,10 @@ async function loadPricing() {
   tbody.innerHTML = items.map((p, i) => `
     <tr>
       <td>${p.model}</td>
-      <td>${p.endpoint}</td>
-      <td><input type="number" step="0.0001" data-i="${i}" data-k="input_price" value="${p.input_price}"></td>
-      <td><input type="number" step="0.0001" data-i="${i}" data-k="output_price" value="${p.output_price}"></td>
-      <td><input type="number" step="0.0001" data-i="${i}" data-k="cache_read_price" value="${p.cache_read_price}"></td>
-      <td><input type="number" step="0.0001" data-i="${i}" data-k="cache_write_price" value="${p.cache_write_price}"></td>
+      <td><input type="number" step="0.01" data-i="${i}" data-k="input_price" value="${p.input_price}"></td>
+      <td><input type="number" step="0.01" data-i="${i}" data-k="output_price" value="${p.output_price}"></td>
+      <td><input type="number" step="0.01" data-i="${i}" data-k="cache_read_price" value="${p.cache_read_price}"></td>
+      <td><input type="number" step="0.01" data-i="${i}" data-k="cache_write_price" value="${p.cache_write_price}"></td>
     </tr>`).join("");
   window.__pricing = items;
 }

@@ -6,48 +6,42 @@ from app.db import get_conn
 def list_pricing() -> list[dict]:
     with get_conn() as conn:
         cur = conn.execute(
-            "SELECT model, endpoint, input_price, output_price, cache_read_price, cache_write_price "
-            "FROM model_pricing ORDER BY model, endpoint"
+            "SELECT model, input_price, output_price, cache_read_price, cache_write_price "
+            "FROM model_pricing ORDER BY model"
         )
         return [dict(r) for r in cur.fetchall()]
 
 
-def upsert_pricing(model: str, endpoint: str,
+def upsert_pricing(model: str,
                    input_price: float, output_price: float,
                    cache_read_price: float, cache_write_price: float) -> None:
     with get_conn() as conn:
         conn.execute(
             """INSERT INTO model_pricing
-               (model, endpoint, input_price, output_price, cache_read_price, cache_write_price)
-               VALUES (?, ?, ?, ?, ?, ?)
-               ON CONFLICT(model, endpoint) DO UPDATE SET
+               (model, input_price, output_price, cache_read_price, cache_write_price)
+               VALUES (?, ?, ?, ?, ?)
+               ON CONFLICT(model) DO UPDATE SET
                  input_price=excluded.input_price,
                  output_price=excluded.output_price,
                  cache_read_price=excluded.cache_read_price,
                  cache_write_price=excluded.cache_write_price,
                  updated_at=CURRENT_TIMESTAMP""",
-            (model, endpoint, input_price, output_price, cache_read_price, cache_write_price),
+            (model, input_price, output_price, cache_read_price, cache_write_price),
         )
 
 
 def sync_pricing_from_data() -> int:
     with get_conn() as conn:
-        cur = conn.execute(
-            "SELECT DISTINCT model, endpoint FROM usage_records"
-        )
-        pairs = [(r["model"], r["endpoint"]) for r in cur.fetchall()]
+        cur = conn.execute("SELECT DISTINCT model FROM usage_records")
+        models = [r["model"] for r in cur.fetchall()]
         added = 0
-        for m, e in pairs:
+        for m in models:
             exists = conn.execute(
-                "SELECT 1 FROM model_pricing WHERE model=? AND endpoint=?",
-                (m, e),
+                "SELECT 1 FROM model_pricing WHERE model=?", (m,)
             ).fetchone()
             if exists:
                 continue
-            conn.execute(
-                "INSERT INTO model_pricing (model, endpoint) VALUES (?, ?)",
-                (m, e),
-            )
+            conn.execute("INSERT INTO model_pricing (model) VALUES (?)", (m,))
             added += 1
     return added
 
@@ -75,9 +69,8 @@ def resolve_mode(configured: str) -> str:
     return "token_plan" if (row["s"] or 0) == 0 else "pay_as_you_go"
 
 
-def estimate_cost(record: dict, pricing: dict[tuple[str, str], dict]) -> float:
-    key = (record["model"], record["endpoint"])
-    p = pricing.get(key)
+def estimate_cost(record: dict, pricing: dict[str, dict]) -> float:
+    p = pricing.get(record["model"])
     if not p:
         return 0.0
     ep = record["endpoint"]
@@ -91,19 +84,18 @@ def estimate_cost(record: dict, pricing: dict[tuple[str, str], dict]) -> float:
         raw = in_t * p["cache_write_price"]
     else:
         raw = in_t * p["input_price"]
-    return float(Decimal(str(raw)) / Decimal("1000"))
+    return float(Decimal(str(raw)) / Decimal("1000000"))
 
 
-def estimate_for_records(records: list[dict], pricing: dict[tuple[str, str], dict]) -> float:
+def estimate_for_records(records: list[dict], pricing: dict[str, dict]) -> float:
     total = Decimal("0")
     for r in records:
         total += Decimal(str(estimate_cost(r, pricing)))
     return float(total.quantize(Decimal("0.0001")))
 
 
-def pricing_dict() -> dict[tuple[str, str], dict]:
+def pricing_dict() -> dict[str, dict]:
     out = {}
     for row in list_pricing():
-        key = (row["model"], row["endpoint"])
-        out[key] = row
+        out[row["model"]] = row
     return out

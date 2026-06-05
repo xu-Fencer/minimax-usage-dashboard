@@ -37,7 +37,7 @@ uv run uvicorn app.main:app --port 8765
 1. 打开 [MiniMax 平台](https://platform.minimaxi.com/console/consumption-detail?tab=api-keys)，导出 CSV（最多 3 个月）
 2. 打开 http://localhost:8765/settings
 3. 拖入 CSV
-4. 点"从数据中拉取" → 填入模型价格（CNY / 1k tokens）
+4. 点"从数据中拉取模型" → 填入价格（**元 / 百万 tokens**）
 5. 打开 http://localhost:8765/dashboard 查看图表
 
 ## 计费模式
@@ -45,6 +45,16 @@ uv run uvicorn app.main:app --port 8765
 - **auto**（默认）：自动判断，全 0 → token_plan，否则 → pay_as_you_go
 - **pay_as_you_go**：用 CSV 中的实际消费金额
 - **token_plan**：用配置价格估算价值，"节省" = 估算价值 - 实际（通常等于估算价值）
+
+## 价格表
+
+按 `(model, endpoint)` 不再分维度，**只按 model**，每个模型 4 个价格字段：
+- **输入价格**：普通 chat 输入（`chatcompletion-v2`）
+- **输出价格**：普通 chat 输出（`chatcompletion-v2`）
+- **缓存读取**：cache 命中读取（`cache-read`）
+- **缓存写入**：cache 创建（`cache-create`）
+
+单位是 **元 / 百万 tokens**。计算时按 endpoint 类型自动选择对应字段。
 
 ## 数据存储
 

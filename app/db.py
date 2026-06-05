@@ -50,14 +50,12 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 
 CREATE TABLE IF NOT EXISTS model_pricing (
-    model TEXT NOT NULL,
-    endpoint TEXT NOT NULL,
+    model TEXT PRIMARY KEY,
     input_price REAL NOT NULL DEFAULT 0,
     output_price REAL NOT NULL DEFAULT 0,
     cache_read_price REAL NOT NULL DEFAULT 0,
     cache_write_price REAL NOT NULL DEFAULT 0,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (model, endpoint)
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 """
 
@@ -66,6 +64,10 @@ def init_db(path: Path | None = None) -> None:
     target = path or DB_PATH
     target.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(target) as conn:
+        cur = conn.execute("PRAGMA table_info(model_pricing)")
+        cols = {r[1] for r in cur.fetchall()}
+        if cols and "endpoint" in cols:
+            conn.execute("DROP TABLE model_pricing")
         conn.executescript(SCHEMA)
         conn.commit()
 

@@ -29,12 +29,12 @@ def dashboard_data():
     configured_mode = billing.get_setting("billing_mode", "auto") or "auto"
     resolved_mode = billing.resolve_mode(configured_mode)
 
-    used_keys = {(r["model"], r["endpoint"]) for r in records}
+    used_models = {r["model"] for r in records}
     unconfigured = [
-        {"model": m, "endpoint": e}
-        for (m, e) in used_keys
-        if (m, e) not in pricing or all(
-            pricing[(m, e)].get(k, 0) == 0
+        {"model": m}
+        for m in used_models
+        if m not in pricing or all(
+            pricing[m].get(k, 0) == 0
             for k in ("input_price", "output_price", "cache_read_price", "cache_write_price")
         )
     ]
@@ -116,7 +116,7 @@ def get_pricing():
 def put_pricing(payload: list[dict]):
     for p in payload:
         billing.upsert_pricing(
-            p["model"], p["endpoint"],
+            p["model"],
             float(p.get("input_price", 0)),
             float(p.get("output_price", 0)),
             float(p.get("cache_read_price", 0)),
