@@ -48,13 +48,17 @@ uv run uvicorn app.main:app --port 8765
 
 ## 价格表
 
-按 `(model, endpoint)` 不再分维度，**只按 model**，每个模型 4 个价格字段：
-- **输入价格**：普通 chat 输入（`chatcompletion-v2`）
-- **输出价格**：普通 chat 输出（`chatcompletion-v2`）
-- **缓存读取**：cache 命中读取（`cache-read`）
-- **缓存写入**：cache 创建（`cache-create`）
+按 `(model, endpoint)` 不再分维度，**只按 model**，每个模型 5 个价格字段：
 
-单位是 **元 / 百万 tokens**。计算时按 endpoint 类型自动选择对应字段。
+| 字段 | 单位 | 适用 endpoint |
+|------|------|---------------|
+| **输入价格** | 元 / 百万 tokens | `chatcompletion-v2` 的 input |
+| **输出价格** | 元 / 百万 tokens | `chatcompletion-v2` 的 output |
+| **缓存读取** | 元 / 百万 tokens | `cache-read` |
+| **缓存写入** | 元 / 百万 tokens | `cache-create` |
+| **按次价格** | 元 / 次 | 其他（`code_plan_resource_package`、`generate_lyrics`、`image-generation`、`t2a-v2` 等） |
+
+计算时按 endpoint 类型自动选择对应字段；按次计费场景下用 `input_tokens` 字段作为调用次数。
 
 ## 数据存储
 
