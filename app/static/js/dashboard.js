@@ -25,7 +25,23 @@ function renderDailyChart(daily) {
   const el = document.getElementById("daily-chart");
   charts.daily = echarts.init(el);
   charts.daily.setOption({
-    tooltip: { trigger: "axis" },
+    tooltip: {
+      trigger: "axis",
+      formatter: (params) => {
+        const day = params[0].axisValue;
+        const dayData = daily.find(d => d.day === day) || {};
+        let html = `<b>${day}</b><br>`;
+        params.forEach(p => {
+          if (p.seriesName === "估算价值") {
+            html += `${p.marker}${p.seriesName}: ¥${Number(p.data || 0).toFixed(4)}<br>`;
+          } else {
+            html += `${p.marker}${p.seriesName}: ${fmtInt(p.data || 0)}<br>`;
+          }
+        });
+        html += `<span style="color:#999">缓存命中率: ${(dayData.cache_hit_rate || 0).toFixed(2)}%</span>`;
+        return html;
+      },
+    },
     legend: { data: ["输入", "输出", "缓存读取", "缓存创建"] },
     grid: { left: 60, right: 60, top: 40, bottom: 40 },
     xAxis: { type: "category", data: daily.map(d => d.day) },
@@ -115,6 +131,7 @@ async function loadDashboard() {
 
   document.getElementById("actual-cost").textContent = fmt(s.actual_cost);
   document.getElementById("estimated-cost").textContent = fmt(s.estimated_cost);
+  document.getElementById("cache-hit-rate").textContent = (s.cache_hit_rate || 0).toFixed(2) + "%";
   document.getElementById("mode-badge").textContent = d.billing_mode;
   document.getElementById("time-range").textContent =
     s.earliest ? `${s.earliest} ~ ${s.latest}` : "暂无数据";

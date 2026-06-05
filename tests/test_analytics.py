@@ -20,8 +20,9 @@ def test_summary(isolated_db):
     _seed(isolated_db)
     s = summary()
     assert s["total_buckets"] == 3
-    assert s["total_input"] == 800
+    assert s["total_input"] == 300  # chat input only (excludes cache-read)
     assert s["total_output"] == 30
+    assert s["total_cache_read"] == 500
     assert s["earliest"].startswith("2026-05-04T19:00")
 
 
@@ -42,6 +43,24 @@ def test_daily_series_splits_four_categories(isolated_db):
     assert day1["output_tokens"] == 10
     assert day1["cache_read_tokens"] == 500
     assert day1["cache_create_tokens"] == 0
+
+
+def test_daily_series_cache_hit_rate(isolated_db):
+    _seed(isolated_db)
+    d = daily_series()
+    day1 = d[0]
+    # day1: 100 chat input + 500 cache read → 500/(500+100) = 83.33%
+    assert abs(day1["cache_hit_rate"] - 83.33) < 0.01
+    day2 = d[1]
+    # day2: 200 chat input + 0 cache read → 0%
+    assert day2["cache_hit_rate"] == 0.0
+
+
+def test_summary_cache_hit_rate(isolated_db):
+    _seed(isolated_db)
+    s = summary()
+    # total: 100+200 chat input + 500 cache read = 500/800 = 62.5%
+    assert abs(s["cache_hit_rate"] - 62.5) < 0.01
 
 
 def test_year_heatmap(isolated_db):

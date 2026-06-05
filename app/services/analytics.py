@@ -7,6 +7,13 @@ def _to_iso(s: str | None) -> str | None:
     return s.replace(" ", "T")
 
 
+def _hit_rate(chat_input: int, cache_read: int) -> float:
+    denom = chat_input + cache_read
+    if denom <= 0:
+        return 0.0
+    return round(cache_read * 100.0 / denom, 2)
+
+
 def summary() -> dict:
     with get_conn() as conn:
         row = conn.execute(
@@ -14,18 +21,25 @@ def summary() -> dict:
                 COUNT(*) AS total_buckets,
                 COALESCE(SUM(cost), 0) AS actual_cost,
                 COALESCE(SUM(cost_after_voucher), 0) AS cost_after_voucher,
-                COALESCE(SUM(input_tokens), 0) AS total_input,
+                COALESCE(SUM(CASE WHEN endpoint LIKE 'chatcompletion%' THEN input_tokens ELSE 0 END), 0) AS total_input,
                 COALESCE(SUM(output_tokens), 0) AS total_output,
+                COALESCE(SUM(CASE WHEN endpoint LIKE 'cache-read%' THEN input_tokens ELSE 0 END), 0) AS total_cache_read,
+                COALESCE(SUM(CASE WHEN endpoint LIKE 'cache-create%' THEN input_tokens ELSE 0 END), 0) AS total_cache_create,
                 MIN(bucket_start) AS earliest,
                 MAX(bucket_start) AS latest
             FROM usage_records"""
         ).fetchone()
+    chat_input = int(row["total_input"] or 0)
+    cache_read = int(row["total_cache_read"] or 0)
     return {
         "total_buckets": row["total_buckets"] or 0,
         "actual_cost": float(row["actual_cost"] or 0),
         "cost_after_voucher": float(row["cost_after_voucher"] or 0),
-        "total_input": int(row["total_input"] or 0),
+        "total_input": chat_input,
         "total_output": int(row["total_output"] or 0),
+        "total_cache_read": cache_read,
+        "total_cache_create": int(row["total_cache_create"] or 0),
+        "cache_hit_rate": _hit_rate(chat_input, cache_read),
         "earliest": _to_iso(row["earliest"]),
         "latest": _to_iso(row["latest"]),
     }
@@ -46,18 +60,21 @@ def daily_series() -> list[dict]:
             GROUP BY DATE(bucket_start)
             ORDER BY day"""
         )
-        return [
-            {
+        rows = []
+        for r in cur.fetchall():
+            inp = int(r["input_tokens"] or 0)
+            cr = int(r["cache_read_tokens"] or 0)
+            rows.append({
                 "day": r["day"],
-                "input_tokens": int(r["input_tokens"] or 0),
+                "input_tokens": inp,
                 "output_tokens": int(r["output_tokens"] or 0),
-                "cache_read_tokens": int(r["cache_read_tokens"] or 0),
+                "cache_read_tokens": cr,
                 "cache_create_tokens": int(r["cache_create_tokens"] or 0),
                 "total_tokens": int(r["total_tokens"] or 0),
                 "actual_cost": float(r["actual_cost"] or 0),
-            }
-            for r in cur.fetchall()
-        ]
+                "cache_hit_rate": _hit_rate(inp, cr),
+            })
+        return rows
 
 
 def by_model() -> list[dict]:
