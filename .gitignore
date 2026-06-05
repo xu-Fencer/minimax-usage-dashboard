@@ -15,6 +15,7 @@ server-stderr.txt
 e2e-*.png
 dbg-*.log
 server-e2e-*.log
+srv*.log
 
 
 e2e-*.png
