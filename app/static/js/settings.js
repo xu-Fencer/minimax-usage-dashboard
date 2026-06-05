@@ -56,6 +56,7 @@ async function loadPricing() {
       <td><input type="number" step="0.01" data-i="${i}" data-k="output_price" value="${p.output_price}"></td>
       <td><input type="number" step="0.01" data-i="${i}" data-k="cache_read_price" value="${p.cache_read_price}"></td>
       <td><input type="number" step="0.01" data-i="${i}" data-k="cache_write_price" value="${p.cache_write_price}"></td>
+      <td><input type="number" step="0.01" data-i="${i}" data-k="call_price" value="${p.call_price}"></td>
     </tr>`).join("");
   window.__pricing = items;
 }
@@ -71,7 +72,7 @@ async function savePricing() {
   const items = window.__pricing || [];
   const updated = items.map((p, i) => {
     const out = { ...p };
-    ["input_price", "output_price", "cache_read_price", "cache_write_price"].forEach(k => {
+    ["input_price", "output_price", "cache_read_price", "cache_write_price", "call_price"].forEach(k => {
       const inp = document.querySelector(`input[data-i="${i}"][data-k="${k}"]`);
       if (inp) out[k] = parseFloat(inp.value || 0);
     });

@@ -86,7 +86,44 @@ def test_estimate_cost_unconfigured():
 def test_estimate_for_records_sum():
     pricing = {"M": {"input_price": 2.1, "output_price": 8.4, "cache_read_price": 0, "cache_write_price": 0}}
     recs = [
-        {"model": "M", "endpoint": "chatcompletion-v2", "input_tokens": 1_000_000, "output_tokens": 0},
-        {"model": "M", "endpoint": "chatcompletion-v2", "input_tokens": 0, "output_tokens": 100_000},
+        {"model": "M", "endpoint": "chatcompletion-v2(Text API)", "input_tokens": 1_000_000, "output_tokens": 0},
+        {"model": "M", "endpoint": "chatcompletion-v2(Text API)", "input_tokens": 0, "output_tokens": 100_000},
     ]
     assert abs(estimate_for_records(recs, pricing) - 2.94) < 1e-9
+
+
+def test_estimate_cost_per_call_code_plan_resource():
+    pricing = {"vlm": {"input_price": 0, "output_price": 0, "cache_read_price": 0, "cache_write_price": 0, "call_price": 0.5}}
+    rec = {"model": "vlm", "endpoint": "code_plan_resource_package", "input_tokens": 1, "output_tokens": 0}
+    assert estimate_cost(rec, pricing) == 0.5
+
+
+def test_estimate_cost_per_call_generate_lyrics_multiple():
+    pricing = {"lyrics": {"input_price": 0, "output_price": 0, "cache_read_price": 0, "cache_write_price": 0, "call_price": 0.1}}
+    rec = {"model": "lyrics", "endpoint": "generate_lyrics", "input_tokens": 5, "output_tokens": 0}
+    assert estimate_cost(rec, pricing) == 0.5
+
+
+def test_estimate_cost_per_call_unconfigured():
+    rec = {"model": "vlm", "endpoint": "code_plan_resource_package", "input_tokens": 1, "output_tokens": 0}
+    assert estimate_cost(rec, {}) == 0.0
+
+
+def test_estimate_cost_per_call_zero_price():
+    pricing = {"vlm": {"input_price": 0, "output_price": 0, "cache_read_price": 0, "cache_write_price": 0, "call_price": 0}}
+    rec = {"model": "vlm", "endpoint": "code_plan_resource_package", "input_tokens": 3, "output_tokens": 0}
+    assert estimate_cost(rec, pricing) == 0.0
+
+
+def test_upsert_and_list_includes_call_price(isolated_db):
+    upsert_pricing("vlm", 0, 0, 0, 0, call_price=0.5)
+    items = list_pricing()
+    assert items[0]["call_price"] == 0.5
+
+
+def test_per_call_does_not_use_token_prices():
+    # Per-call endpoint should not be charged by input_price even if set
+    pricing = {"vlm": {"input_price": 2.1, "output_price": 8.4, "cache_read_price": 0, "cache_write_price": 0, "call_price": 0.5}}
+    rec = {"model": "vlm", "endpoint": "code_plan_resource_package", "input_tokens": 1, "output_tokens": 0}
+    # call_price path, not token path: 1 × 0.5 = 0.5
+    assert estimate_cost(rec, pricing) == 0.5

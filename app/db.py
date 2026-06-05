@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS model_pricing (
     output_price REAL NOT NULL DEFAULT 0,
     cache_read_price REAL NOT NULL DEFAULT 0,
     cache_write_price REAL NOT NULL DEFAULT 0,
+    call_price REAL NOT NULL DEFAULT 0,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 """
@@ -68,6 +69,8 @@ def init_db(path: Path | None = None) -> None:
         cols = {r[1] for r in cur.fetchall()}
         if cols and "endpoint" in cols:
             conn.execute("DROP TABLE model_pricing")
+        elif cols and "call_price" not in cols:
+            conn.execute("ALTER TABLE model_pricing ADD COLUMN call_price REAL NOT NULL DEFAULT 0")
         conn.executescript(SCHEMA)
         conn.commit()
 

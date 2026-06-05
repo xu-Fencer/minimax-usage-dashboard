@@ -34,23 +34,25 @@
     <label><input type="radio" name="bm" value="token_plan" onchange="saveSettings()"> Token 套餐</label>
     <span id="current-mode" style="margin-left:12px;color:var(--muted)"></span>
   </div>
-  <h3 style="font-size:14px;margin-top:20px">模型价格表 (元 / 百万 tokens)</h3>
+  <h3 style="font-size:14px;margin-top:20px">模型价格表</h3>
   <button onclick="syncPricing()" style="margin-bottom:12px">从数据中拉取模型</button>
   <table id="pricing-table" style="font-size:12px">
     <thead><tr>
       <th>模型</th>
-      <th>输入价格</th>
-      <th>输出价格</th>
-      <th>缓存读取</th>
-      <th>缓存写入</th>
+      <th>输入价格<br><span style="font-weight:normal;color:var(--muted)">元 / 百万 tokens</span></th>
+      <th>输出价格<br><span style="font-weight:normal;color:var(--muted)">元 / 百万 tokens</span></th>
+      <th>缓存读取<br><span style="font-weight:normal;color:var(--muted)">元 / 百万 tokens</span></th>
+      <th>缓存写入<br><span style="font-weight:normal;color:var(--muted)">元 / 百万 tokens</span></th>
+      <th>按次价格<br><span style="font-weight:normal;color:var(--muted)">元 / 次</span></th>
     </tr></thead>
     <tbody></tbody>
   </table>
   <p style="color:var(--muted);font-size:12px;margin-top:8px">
     说明: 计算时按 endpoint 类型选择对应字段:
-    <code>chatcompletion-v2</code> 用输入/输出，
-    <code>cache-read</code> 用缓存读取，
-    <code>cache-create</code> 用缓存写入。
+    <code>chatcompletion-v2</code> 用输入/输出（每百万 tokens），
+    <code>cache-read</code> 用缓存读取（每百万 tokens），
+    <code>cache-create</code> 用缓存写入（每百万 tokens），
+    其他（如 <code>code_plan_resource_package</code>、<code>generate_lyrics</code>）用按次价格（每次调用）。
   </p>
   <button class="primary" onclick="savePricing()">保存价格</button>
 </div>

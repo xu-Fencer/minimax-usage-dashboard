@@ -44,7 +44,7 @@ def dashboard_data():
         for m in used_models
         if m not in pricing or all(
             pricing[m].get(k, 0) == 0
-            for k in ("input_price", "output_price", "cache_read_price", "cache_write_price")
+            for k in ("input_price", "output_price", "cache_read_price", "cache_write_price", "call_price")
         )
     ]
 
@@ -145,6 +145,7 @@ def put_pricing(payload: list[dict]):
             float(p.get("output_price", 0)),
             float(p.get("cache_read_price", 0)),
             float(p.get("cache_write_price", 0)),
+            float(p.get("call_price", 0)),
         )
     return {"ok": True, "count": len(payload)}
 
