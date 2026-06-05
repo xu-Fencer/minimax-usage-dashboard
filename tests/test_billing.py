@@ -127,3 +127,74 @@ def test_per_call_does_not_use_token_prices():
     rec = {"model": "vlm", "endpoint": "code_plan_resource_package", "input_tokens": 1, "output_tokens": 0}
     # call_price path, not token path: 1 × 0.5 = 0.5
     assert estimate_cost(rec, pricing) == 0.5
+
+
+def test_cache_read_uses_cache_read_price_not_input_or_output():
+    # Regression: cache-read rows have a field named 'input_tokens' but
+    # represent cache HITS. They must be billed by cache_read_price, NEVER
+    # by input_price or output_price. Use absurd values to catch mistakes.
+    pricing = {
+        "M": {
+            "input_price": 9999.0,
+            "output_price": 9999.0,
+            "cache_read_price": 0.5,
+            "cache_write_price": 9999.0,
+            "call_price": 9999.0,
+        }
+    }
+    rec = {"model": "M", "endpoint": "cache-read(Text API)", "input_tokens": 1_000_000, "output_tokens": 100_000}
+    # Correct: 1M × 0.5 / 1M = 0.5
+    # If wrongly using input_price: 1M × 9999 / 1M = 9999
+    # If wrongly using output_price: 100k × 9999 / 1M = 999.9
+    # If wrongly using cache_write_price: 1M × 9999 / 1M = 9999
+    assert estimate_cost(rec, pricing) == 0.5
+
+
+def test_cache_create_uses_cache_write_price_not_input_or_output():
+    # Regression: cache-create rows have a field named 'input_tokens' but
+    # represent cache CREATIONS. They must be billed by cache_write_price.
+    pricing = {
+        "M": {
+            "input_price": 9999.0,
+            "output_price": 9999.0,
+            "cache_read_price": 9999.0,
+            "cache_write_price": 0.1,
+            "call_price": 9999.0,
+        }
+    }
+    rec = {"model": "M", "endpoint": "cache-create(Text API)", "input_tokens": 1_000_000, "output_tokens": 0}
+    # Correct: 1M × 0.1 / 1M = 0.1
+    assert estimate_cost(rec, pricing) == 0.1
+
+
+def test_chatcompletion_uses_input_and_output_only():
+    # Regression: chatcompletion-v2 should use BOTH input and output prices,
+    # but NOT cache or call prices.
+    pricing = {
+        "M": {
+            "input_price": 2.1,
+            "output_price": 8.4,
+            "cache_read_price": 9999.0,
+            "cache_write_price": 9999.0,
+            "call_price": 9999.0,
+        }
+    }
+    rec = {"model": "M", "endpoint": "chatcompletion-v2(Text API)", "input_tokens": 1_000_000, "output_tokens": 100_000}
+    # Correct: (1M × 2.1 + 100k × 8.4) / 1M = 2.1 + 0.84 = 2.94
+    assert estimate_cost(rec, pricing) == 2.94
+
+
+def test_per_call_uses_call_price_only():
+    # Regression: per-call endpoints must use call_price, never token prices.
+    pricing = {
+        "M": {
+            "input_price": 9999.0,
+            "output_price": 9999.0,
+            "cache_read_price": 9999.0,
+            "cache_write_price": 9999.0,
+            "call_price": 0.05,
+        }
+    }
+    rec = {"model": "M", "endpoint": "code_plan_resource_package", "input_tokens": 5, "output_tokens": 0}
+    # Correct: 5 × 0.05 = 0.25
+    assert estimate_cost(rec, pricing) == 0.25
