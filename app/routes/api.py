@@ -59,6 +59,7 @@ def dashboard_data():
         "by_model": analytics.by_model(),
         "by_endpoint": analytics.by_endpoint(),
         "heatmap": analytics.heatmap(),
+        "year_heatmap": analytics.year_heatmap(),
         "unconfigured_pricing": unconfigured,
     }
 
@@ -122,6 +123,17 @@ def get_settings():
         "billing_mode": billing.get_setting("billing_mode", "auto") or "auto",
         "theme": billing.get_setting("theme", "system") or "system",
     }
+
+
+@router.get("/layout")
+def get_layout():
+    return billing.get_layout()
+
+
+@router.put("/layout")
+def put_layout(payload: dict):
+    billing.save_layout(payload)
+    return billing.get_layout()
 
 
 @router.put("/settings")

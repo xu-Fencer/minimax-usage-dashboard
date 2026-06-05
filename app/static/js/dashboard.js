@@ -1,12 +1,20 @@
 let currentPage = 1;
 let charts = {};
+let editMode = false;
+let currentLayout = { order: [], hidden: [] };
+let originalLayout = null;
 
-function fmt(n) {
-  return "¥" + Number(n || 0).toFixed(2);
-}
-function fmtInt(n) {
-  return Number(n || 0).toLocaleString("zh-CN");
-}
+const BLOCK_TITLES = {
+  summary: "金额卡",
+  daily: "每日用量",
+  models_endpoints: "模型 / 接口分布",
+  heatmap_weekly: "7×24 周热力图",
+  heatmap_year: "一年热力图",
+  records: "原始数据",
+};
+
+function fmt(n) { return "¥" + Number(n || 0).toFixed(2); }
+function fmtInt(n) { return Number(n || 0).toLocaleString("zh-CN"); }
 
 function destroyCharts() {
   Object.values(charts).forEach(c => c.dispose());
@@ -14,11 +22,11 @@ function destroyCharts() {
 }
 
 function renderDailyChart(daily) {
-  const el = document.getElementById("daily-cost-line");
+  const el = document.getElementById("daily-chart");
   charts.daily = echarts.init(el);
   charts.daily.setOption({
     tooltip: { trigger: "axis" },
-    legend: { data: ["输入", "输出", "估算价值"] },
+    legend: { data: ["输入", "输出", "缓存读取", "缓存创建"] },
     grid: { left: 60, right: 60, top: 40, bottom: 40 },
     xAxis: { type: "category", data: daily.map(d => d.day) },
     yAxis: [
@@ -28,6 +36,8 @@ function renderDailyChart(daily) {
     series: [
       { name: "输入", type: "bar", stack: "t", data: daily.map(d => d.input_tokens), itemStyle: { color: "#52c41a" } },
       { name: "输出", type: "bar", stack: "t", data: daily.map(d => d.output_tokens), itemStyle: { color: "#fa8c16" } },
+      { name: "缓存读取", type: "bar", stack: "t", data: daily.map(d => d.cache_read_tokens), itemStyle: { color: "#13c2c2" } },
+      { name: "缓存创建", type: "bar", stack: "t", data: daily.map(d => d.cache_create_tokens), itemStyle: { color: "#722ed1" } },
       { name: "估算价值", type: "line", yAxisIndex: 1, data: daily.map(d => d.estimated_cost), itemStyle: { color: "#1677ff" } },
     ],
   });
@@ -61,6 +71,41 @@ function renderHeatmap(cells) {
   });
 }
 
+function renderYearHeatmap(yr) {
+  const el = document.getElementById("year-heatmap");
+  charts.year = echarts.init(el);
+  if (!yr.range || !yr.data.length) {
+    charts.year.setOption({
+      title: { text: "暂无数据", left: "center", top: "center", textStyle: { color: "#999" } },
+    });
+    return;
+  }
+  const data = yr.data.map(d => [d.day, d.tokens]);
+  const max = Math.max(...yr.data.map(d => d.tokens));
+  charts.year.setOption({
+    tooltip: {
+      formatter: p => `${p.value[0]}<br>${fmtInt(p.value[1])} tokens`,
+    },
+    visualMap: {
+      min: 0, max, calculable: false, orient: "horizontal",
+      left: "center", bottom: 0,
+      inRange: { color: ["#1a0000", "#5f0000", "#a30000", "#e60000", "#ff4040"] },
+      text: ["More", "Less"], textStyle: { color: "#aaa" },
+    },
+    calendar: {
+      range: yr.range,
+      cellSize: ["auto", 14],
+      top: 30, left: 50, right: 30,
+      itemStyle: { borderColor: "#0a0a0a", color: "#1a1a1a" },
+      splitLine: { show: false },
+      yearLabel: { show: false },
+      monthLabel: { color: "#aaa", fontSize: 11 },
+      dayLabel: { color: "#aaa", firstDay: 1, nameMap: ["日", "一", "二", "三", "四", "五", "六"] },
+    },
+    series: { type: "heatmap", coordinateSystem: "calendar", data },
+  });
+}
+
 async function loadDashboard() {
   destroyCharts();
   const r = await fetch("/api/dashboard");
@@ -74,19 +119,26 @@ async function loadDashboard() {
   document.getElementById("time-range").textContent =
     s.earliest ? `${s.earliest} ~ ${s.latest}` : "暂无数据";
 
-  if (d.billing_mode === "token_plan") {
+  if (d.billing_mode === "token_plan" && !currentLayout.hidden.includes("summary")) {
     const saving = (s.estimated_cost || 0) - (s.actual_cost || 0);
     document.getElementById("saving-banner").style.display = "block";
     document.getElementById("saving-amount").textContent = fmt(saving);
+  } else {
+    document.getElementById("saving-banner").style.display = "none";
   }
 
-  renderDailyChart(d.daily);
-  renderPie("model-pie", d.by_model, "model");
-  renderPie("endpoint-pie", d.by_endpoint, "endpoint");
-  renderHeatmap(d.heatmap);
+  if (!currentLayout.hidden.includes("daily")) renderDailyChart(d.daily);
+  if (!currentLayout.hidden.includes("models_endpoints")) {
+    renderPie("model-pie", d.by_model, "model");
+    renderPie("endpoint-pie", d.by_endpoint, "endpoint");
+  }
+  if (!currentLayout.hidden.includes("heatmap_weekly")) renderHeatmap(d.heatmap);
+  if (!currentLayout.hidden.includes("heatmap_year")) renderYearHeatmap(d.year_heatmap);
 
-  await loadFilterOptions();
-  await loadRecords();
+  if (!currentLayout.hidden.includes("records")) {
+    await loadFilterOptions();
+    await loadRecords();
+  }
 }
 
 async function loadFilterOptions() {
@@ -141,7 +193,101 @@ async function loadRecords() {
 function prevPage() { if (currentPage > 1) { currentPage--; loadRecords(); } }
 function nextPage() { currentPage++; loadRecords(); }
 
+function applyLayout() {
+  const container = document.querySelector(".container");
+  const blocks = currentLayout.order.map(name => document.querySelector(`[data-block="${name}"]`)).filter(Boolean);
+  blocks.forEach(b => container.appendChild(b));
+  currentLayout.hidden.forEach(name => {
+    const el = document.querySelector(`[data-block="${name}"]`);
+    if (el) el.style.display = "none";
+  });
+  currentLayout.order.filter(n => !currentLayout.hidden.includes(n)).forEach(name => {
+    const el = document.querySelector(`[data-block="${name}"]`);
+    if (el) el.style.display = "";
+  });
+}
+
+function refreshBlockVisuals() {
+  destroyCharts();
+  loadDashboard();
+}
+
+function toggleEditMode() {
+  if (editMode) return;
+  editMode = true;
+  originalLayout = JSON.parse(JSON.stringify(currentLayout));
+  document.querySelectorAll(".block-toolbar").forEach(b => b.style.display = "");
+  document.getElementById("btn-edit").style.display = "none";
+  document.getElementById("btn-save-layout").style.display = "";
+  document.getElementById("btn-cancel-layout").style.display = "";
+  document.getElementById("edit-hint").style.display = "";
+  document.querySelectorAll(".block-hide-btn").forEach(btn => {
+    btn.textContent = currentLayout.hidden.includes(btn.closest("[data-block]").dataset.block) ? "🚫" : "👁";
+  });
+}
+
+function cancelEdit() {
+  if (!editMode) return;
+  currentLayout = originalLayout;
+  editMode = false;
+  document.querySelectorAll(".block-toolbar").forEach(b => b.style.display = "none");
+  document.getElementById("btn-edit").style.display = "";
+  document.getElementById("btn-save-layout").style.display = "none";
+  document.getElementById("btn-cancel-layout").style.display = "none";
+  document.getElementById("edit-hint").style.display = "none";
+  applyLayout();
+  refreshBlockVisuals();
+}
+
+async function saveLayout() {
+  if (!editMode) return;
+  await fetch("/api/layout", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(currentLayout),
+  });
+  toast("布局已保存", "success");
+  editMode = false;
+  document.querySelectorAll(".block-toolbar").forEach(b => b.style.display = "none");
+  document.getElementById("btn-edit").style.display = "";
+  document.getElementById("btn-save-layout").style.display = "none";
+  document.getElementById("btn-cancel-layout").style.display = "none";
+  document.getElementById("edit-hint").style.display = "none";
+}
+
+function moveBlock(name, dir) {
+  const order = currentLayout.order.slice();
+  const i = order.indexOf(name);
+  const j = i + dir;
+  if (j < 0 || j >= order.length) return;
+  [order[i], order[j]] = [order[j], order[i]];
+  currentLayout.order = order;
+  applyLayout();
+}
+
+function toggleBlock(name) {
+  const idx = currentLayout.hidden.indexOf(name);
+  if (idx >= 0) currentLayout.hidden.splice(idx, 1);
+  else currentLayout.hidden.push(name);
+  applyLayout();
+  refreshBlockVisuals();
+  if (editMode) {
+    document.querySelectorAll(".block-hide-btn").forEach(btn => {
+      const n = btn.closest("[data-block]").dataset.block;
+      btn.textContent = currentLayout.hidden.includes(n) ? "🚫" : "👁";
+    });
+  }
+}
+
+async function init() {
+  const r = await fetch("/api/layout");
+  currentLayout = await r.json();
+  applyLayout();
+  loadDashboard();
+}
+
 window.addEventListener("resize", () => {
   Object.values(charts).forEach(c => c.resize());
 });
-loadDashboard();
+
+init();

@@ -36,8 +36,10 @@ def daily_series() -> list[dict]:
         cur = conn.execute(
             """SELECT
                 DATE(bucket_start) AS day,
-                SUM(input_tokens) AS input_tokens,
-                SUM(output_tokens) AS output_tokens,
+                SUM(CASE WHEN endpoint LIKE 'chatcompletion%' THEN input_tokens ELSE 0 END) AS input_tokens,
+                SUM(CASE WHEN endpoint LIKE 'chatcompletion%' THEN output_tokens ELSE 0 END) AS output_tokens,
+                SUM(CASE WHEN endpoint LIKE 'cache-read%' THEN input_tokens ELSE 0 END) AS cache_read_tokens,
+                SUM(CASE WHEN endpoint LIKE 'cache-create%' THEN input_tokens ELSE 0 END) AS cache_create_tokens,
                 SUM(total_tokens) AS total_tokens,
                 SUM(cost) AS actual_cost
             FROM usage_records
@@ -49,6 +51,8 @@ def daily_series() -> list[dict]:
                 "day": r["day"],
                 "input_tokens": int(r["input_tokens"] or 0),
                 "output_tokens": int(r["output_tokens"] or 0),
+                "cache_read_tokens": int(r["cache_read_tokens"] or 0),
+                "cache_create_tokens": int(r["cache_create_tokens"] or 0),
                 "total_tokens": int(r["total_tokens"] or 0),
                 "actual_cost": float(r["actual_cost"] or 0),
             }
@@ -89,6 +93,22 @@ def heatmap() -> list[dict]:
             {"dow": r["dow"], "hour": r["hour"], "tokens": int(r["tokens"] or 0)}
             for r in cur.fetchall()
         ]
+
+
+def year_heatmap() -> dict:
+    with get_conn() as conn:
+        cur = conn.execute(
+            """SELECT
+                DATE(bucket_start) AS day,
+                SUM(total_tokens) AS tokens
+            FROM usage_records
+            GROUP BY DATE(bucket_start)
+            ORDER BY day"""
+        )
+        rows = [{"day": r["day"], "tokens": int(r["tokens"] or 0)} for r in cur.fetchall()]
+    if not rows:
+        return {"range": None, "data": []}
+    return {"range": [rows[0]["day"], rows[-1]["day"]], "data": rows}
 
 
 def paged_records(page: int = 1, size: int = 50,

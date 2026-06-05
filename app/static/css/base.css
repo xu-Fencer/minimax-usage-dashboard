@@ -52,8 +52,11 @@ body {
   display: inline-block; padding: 4px 10px; border-radius: 12px;
   background: var(--success); color: white; font-size: 12px; margin-bottom: 12px;
 }
-.section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+.section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; position: relative; }
 .section h2 { font-size: 16px; margin-top: 0; }
+.block-toolbar { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 10; }
+.block-toolbar button { padding: 2px 8px; font-size: 14px; cursor: pointer; }
+.section:hover .block-toolbar button { background: var(--primary); color: white; }
 .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .chart { width: 100%; height: 300px; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }

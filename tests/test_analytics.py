@@ -1,5 +1,5 @@
 from app.services.analytics import (
-    summary, daily_series, by_model, by_endpoint, heatmap, paged_records
+    summary, daily_series, by_model, by_endpoint, heatmap, year_heatmap, paged_records
 )
 from app.db import get_conn
 
@@ -31,6 +31,35 @@ def test_daily_series(isolated_db):
     assert len(d) == 2
     assert d[0]["day"] == "2026-05-04"
     assert d[0]["total_tokens"] == 610
+
+
+def test_daily_series_splits_four_categories(isolated_db):
+    _seed(isolated_db)
+    d = daily_series()
+    day1 = d[0]
+    # day1: M1 chatcompletion-v2 (100 in, 10 out) + M1 cache-read (500 in)
+    assert day1["input_tokens"] == 100
+    assert day1["output_tokens"] == 10
+    assert day1["cache_read_tokens"] == 500
+    assert day1["cache_create_tokens"] == 0
+
+
+def test_year_heatmap(isolated_db):
+    _seed(isolated_db)
+    h = year_heatmap()
+    assert h["range"] is not None
+    start, end = h["range"]
+    assert start == "2026-05-04"
+    assert end == "2026-05-05"
+    by_day = {row["day"]: row["tokens"] for row in h["data"]}
+    assert by_day["2026-05-04"] == 610
+    assert by_day["2026-05-05"] == 220
+
+
+def test_year_heatmap_empty(isolated_db):
+    h = year_heatmap()
+    assert h["range"] is None
+    assert h["data"] == []
 
 
 def test_by_model(isolated_db):

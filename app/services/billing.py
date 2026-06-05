@@ -66,6 +66,36 @@ def set_setting(key: str, value: str) -> None:
         )
 
 
+DEFAULT_LAYOUT = [
+    "summary", "daily", "models_endpoints", "heatmap_weekly", "heatmap_year", "records",
+]
+LAYOUT_KEY = "dashboard_layout"
+
+
+def get_layout() -> dict:
+    import json
+    raw = get_setting(LAYOUT_KEY)
+    if raw:
+        try:
+            data = json.loads(raw)
+            order = data.get("order") or list(DEFAULT_LAYOUT)
+            hidden = set(data.get("hidden") or [])
+            return {"order": order, "hidden": sorted(hidden)}
+        except (ValueError, TypeError):
+            pass
+    return {"order": list(DEFAULT_LAYOUT), "hidden": []}
+
+
+def save_layout(layout: dict) -> None:
+    import json
+    order = [k for k in layout.get("order", []) if k in DEFAULT_LAYOUT]
+    for k in DEFAULT_LAYOUT:
+        if k not in order:
+            order.append(k)
+    hidden = [k for k in layout.get("hidden", []) if k in DEFAULT_LAYOUT]
+    set_setting(LAYOUT_KEY, json.dumps({"order": order, "hidden": hidden}, ensure_ascii=False))
+
+
 def resolve_mode(configured: str) -> str:
     if configured in ("pay_as_you_go", "token_plan"):
         return configured
