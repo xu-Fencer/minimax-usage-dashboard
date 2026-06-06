@@ -121,6 +121,32 @@ def test_by_model(isolated_db):
     assert m[0]["tokens"] == 610
 
 
+def test_by_model_excludes_per_call(isolated_db):
+    from app.db import get_conn
+    with get_conn() as conn:
+        conn.executemany(
+            "INSERT INTO usage_records (account, api_key_name, endpoint, model, cost, cost_after_voucher, input_tokens, output_tokens, total_tokens, bucket_start, result) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            [
+                # per-token (should be included)
+                ("a", "k", "chatcompletion-v2", "M-LLM", 0, 0, 100, 10, 110, "2026-05-04 19:00:00", "SUCCESS"),
+                ("a", "k", "cache-read", "M-LLM", 0, 0, 500, 0, 500, "2026-05-04 19:00:00", "SUCCESS"),
+                # per-call only (should be excluded)
+                ("a", "k", "code_plan_resource_package", "M-VLM", 0, 0, 1, 0, 1, "2026-05-04 19:00:00", "SUCCESS"),
+                ("a", "k", "generate_lyrics", "M-LYRICS", 0, 0, 3, 0, 3, "2026-05-04 20:00:00", "SUCCESS"),
+                ("a", "k", "image-generation", "M-IMG", 0, 0, 3, 0, 3, "2026-05-04 20:00:00", "SUCCESS"),
+            ],
+        )
+    m = by_model()
+    models = [row["model"] for row in m]
+    assert "M-LLM" in models
+    assert "M-VLM" not in models
+    assert "M-LYRICS" not in models
+    assert "M-IMG" not in models
+    # M-LLM only includes per-token tokens (110 + 500 = 610)
+    llm = next(r for r in m if r["model"] == "M-LLM")
+    assert llm["tokens"] == 610
+
+
 def test_by_endpoint(isolated_db):
     _seed(isolated_db)
     e = by_endpoint()

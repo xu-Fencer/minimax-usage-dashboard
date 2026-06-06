@@ -80,8 +80,11 @@ def daily_series() -> list[dict]:
 def by_model() -> list[dict]:
     with get_conn() as conn:
         cur = conn.execute(
-            "SELECT model, SUM(total_tokens) AS tokens FROM usage_records "
-            "GROUP BY model ORDER BY tokens DESC"
+            """SELECT model, SUM(total_tokens) AS tokens FROM usage_records
+               WHERE endpoint LIKE 'chatcompletion%'
+                  OR endpoint LIKE 'cache-read%'
+                  OR endpoint LIKE 'cache-create%'
+               GROUP BY model ORDER BY tokens DESC"""
         )
         return [{"model": r["model"], "tokens": int(r["tokens"] or 0)} for r in cur.fetchall()]
 
