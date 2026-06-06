@@ -2,21 +2,27 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-data/usage.db
-data/usage.db-*
 *.egg-info/
 .idea/
 .vscode/
-exports/*.csv
 .playwright-mcp/
+
+# Build/runtime artifacts
+data/usage.db
+data/usage.db-*
+
+# User-imported CSVs
+exports/*.csv
+
+# Screenshots & logs from dev/inspection
 deepseek-*.png
-server-stdout.txt
-server-stderr.txt
 e2e-*.png
 dbg-*.log
+server-stdout.txt
+server-stderr.txt
 server-e2e-*.log
 srv*.log
 
-
-e2e-*.png
-server-e2e-*.log
+# Editor/OS
+.DS_Store
+Thumbs.db
