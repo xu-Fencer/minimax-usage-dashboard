@@ -68,17 +68,41 @@ def test_year_heatmap(isolated_db):
     h = year_heatmap()
     assert h["range"] is not None
     start, end = h["range"]
-    assert start == "2026-05-04"
-    assert end == "2026-05-05"
-    by_day = {row["day"]: row["tokens"] for row in h["data"]}
-    assert by_day["2026-05-04"] == 610
-    assert by_day["2026-05-05"] == 220
+    # 12-month window: end is last day of data's month
+    assert end == "2026-05-31"
+    # Starts exactly 12 months before
+    assert start == "2025-06-01"
+    # Each cell has all required fields
+    cells = h["cells"]
+    assert len(cells) > 0
+    for c in cells[:5]:
+        assert "date" in c
+        assert "month" in c
+        assert "day" in c
+        assert "dow" in c
+        assert "tokens" in c
+        assert "level" in c
+        assert 0 <= c["level"] <= 4
+    # Day with data has level >= 1
+    may4 = next(c for c in cells if c["date"] == "2026-05-04")
+    assert may4["tokens"] == 610
+    assert may4["level"] >= 1
+    # Empty day has level 0
+    may3 = next(c for c in cells if c["date"] == "2026-05-03")
+    assert may3["tokens"] == 0
+    assert may3["level"] == 0
 
 
 def test_year_heatmap_empty(isolated_db):
     h = year_heatmap()
-    assert h["range"] is None
-    assert h["data"] == []
+    assert h["range"] is not None
+    # Even with no data, we render a 12-month window ending today
+    start, end = h["range"]
+    assert end is not None
+    # All cells have level 0
+    for c in h["cells"]:
+        assert c["level"] == 0
+        assert c["tokens"] == 0
 
 
 def test_by_model(isolated_db):

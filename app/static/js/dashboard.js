@@ -89,37 +89,81 @@ function renderHeatmap(cells) {
 
 function renderYearHeatmap(yr) {
   const el = document.getElementById("year-heatmap");
-  charts.year = echarts.init(el);
-  if (!yr.range || !yr.data.length) {
-    charts.year.setOption({
-      title: { text: "暂无数据", left: "center", top: "center", textStyle: { color: "#999" } },
-    });
-    return;
+  if (charts.year) { charts.year.dispose(); delete charts.year; }
+  el.innerHTML = "";
+
+  if (!yr || !yr.cells || !yr.cells.length) return;
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const dayLabels = ["Mon", "Wed", "Fri"];
+  const startD = new Date(yr.range[0] + "T00:00:00");
+  const endD = new Date(yr.range[1] + "T00:00:00");
+
+  const monthLabelsEl = document.createElement("div");
+  monthLabelsEl.className = "yh-months";
+  let cur = new Date(startD);
+  while (cur <= endD) {
+    if (cur.getDate() === 1 || cur.getTime() === startD.getTime()) {
+      const span = document.createElement("span");
+      span.textContent = monthNames[cur.getMonth()];
+      monthLabelsEl.appendChild(span);
+    } else {
+      monthLabelsEl.appendChild(document.createElement("span"));
+    }
+    cur.setDate(cur.getDate() + 1);
+    if (monthLabelsEl.children.length >= 12) break;
   }
-  const data = yr.data.map(d => [d.day, d.tokens]);
-  const max = Math.max(...yr.data.map(d => d.tokens));
-  charts.year.setOption({
-    tooltip: {
-      formatter: p => `${p.value[0]}<br>${fmtInt(p.value[1])} tokens`,
-    },
-    visualMap: {
-      min: 0, max, calculable: false, orient: "horizontal",
-      left: "center", bottom: 0,
-      inRange: { color: ["#1a0000", "#5f0000", "#a30000", "#e60000", "#ff4040"] },
-      text: ["More", "Less"], textStyle: { color: "#aaa" },
-    },
-    calendar: {
-      range: yr.range,
-      cellSize: ["auto", 14],
-      top: 30, left: 50, right: 30,
-      itemStyle: { borderColor: "#0a0a0a", color: "#1a1a1a" },
-      splitLine: { show: false },
-      yearLabel: { show: false },
-      monthLabel: { color: "#aaa", fontSize: 11 },
-      dayLabel: { color: "#aaa", firstDay: 1, nameMap: ["日", "一", "二", "三", "四", "五", "六"] },
-    },
-    series: { type: "heatmap", coordinateSystem: "calendar", data },
+  while (monthLabelsEl.children.length < 12) {
+    monthLabelsEl.appendChild(document.createElement("span"));
+  }
+  el.appendChild(monthLabelsEl);
+
+  const dayLabelsEl = document.createElement("div");
+  dayLabelsEl.className = "yh-day-labels";
+  for (let i = 0; i < 7; i++) {
+    const span = document.createElement("span");
+    if (i === 1 || i === 3 || i === 5) span.textContent = dayLabels[(i - 1) / 2];
+    dayLabelsEl.appendChild(span);
+  }
+  el.appendChild(dayLabelsEl);
+
+  const monthStart = startD.getMonth() + 1;
+  const grid = document.createElement("div");
+  grid.className = "yh-grid";
+
+  yr.cells.forEach(c => {
+    const cell = document.createElement("div");
+    cell.className = `yh-cell yh-lv${c.level}`;
+    cell.style.gridColumn = (c.month - monthStart + 1 + (c.month < monthStart ? 12 : 0)).toString();
+    cell.style.gridRow = (c.dow + 1).toString();
+    cell.dataset.date = c.date;
+    cell.title = `${c.date}: ${fmtInt(c.tokens)} tokens`;
+    grid.appendChild(cell);
   });
+
+  el.appendChild(grid);
+
+  const legend = document.createElement("div");
+  legend.className = "yh-legend";
+  const learn = document.createElement("a");
+  learn.textContent = "Learn how we count contributions";
+  learn.onclick = (e) => { e.preventDefault(); toast("缓存命中等级: 0=无, 1=25%分位, 2=50%分位, 3=75%分位, 4=最高", "success"); };
+  legend.appendChild(learn);
+  const scale = document.createElement("div");
+  scale.className = "yh-scale";
+  const less = document.createElement("span");
+  less.textContent = "Less";
+  scale.appendChild(less);
+  for (let i = 0; i < 5; i++) {
+    const sample = document.createElement("span");
+    sample.className = `yh-cell yh-lv${i}`;
+    scale.appendChild(sample);
+  }
+  const more = document.createElement("span");
+  more.textContent = "More";
+  scale.appendChild(more);
+  legend.appendChild(scale);
+  el.appendChild(legend);
 }
 
 async function loadDashboard() {

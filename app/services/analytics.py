@@ -113,6 +113,9 @@ def heatmap() -> list[dict]:
 
 
 def year_heatmap() -> dict:
+    from calendar import monthrange
+    from datetime import date, timedelta
+
     with get_conn() as conn:
         cur = conn.execute(
             """SELECT
@@ -123,9 +126,58 @@ def year_heatmap() -> dict:
             ORDER BY day"""
         )
         rows = [{"day": r["day"], "tokens": int(r["tokens"] or 0)} for r in cur.fetchall()]
-    if not rows:
-        return {"range": None, "data": []}
-    return {"range": [rows[0]["day"], rows[-1]["day"]], "data": rows}
+
+    end = date.fromisoformat(rows[-1]["day"]) if rows else date.today()
+    end_year, end_month = end.year, end.month
+    start_month = end_month - 11
+    start_year = end_year
+    if start_month <= 0:
+        start_month += 12
+        start_year -= 1
+    start = date(start_year, start_month, 1)
+    end_last = monthrange(end_year, end_month)[1]
+    end = date(end_year, end_month, end_last)
+
+    non_zero = sorted(r["tokens"] for r in rows if r["tokens"] > 0)
+    if len(non_zero) >= 4:
+        q1, q2, q3 = non_zero[len(non_zero) // 4], non_zero[len(non_zero) // 2], non_zero[3 * len(non_zero) // 4]
+    elif non_zero:
+        q1, q2, q3 = non_zero[0], non_zero[len(non_zero) // 2], non_zero[-1]
+    else:
+        q1 = q2 = q3 = 0
+
+    def level(tokens: int) -> int:
+        if tokens <= 0:
+            return 0
+        if tokens <= q1:
+            return 1
+        if tokens <= q2:
+            return 2
+        if tokens <= q3:
+            return 3
+        return 4
+
+    by_day = {r["day"]: r["tokens"] for r in rows}
+    cells = []
+    cur = start
+    while cur <= end:
+        iso = cur.isoformat()
+        tokens = by_day.get(iso, 0)
+        cells.append({
+            "date": iso,
+            "month": cur.month,
+            "day": cur.day,
+            "dow": (cur.weekday() + 1) % 7,
+            "tokens": tokens,
+            "level": level(tokens),
+        })
+        cur += timedelta(days=1)
+
+    return {
+        "range": [start.isoformat(), end.isoformat()],
+        "levels": {"q1": q1, "q2": q2, "q3": q3},
+        "cells": cells,
+    }
 
 
 def paged_records(page: int = 1, size: int = 50,
