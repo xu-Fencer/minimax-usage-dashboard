@@ -113,7 +113,6 @@ def heatmap() -> list[dict]:
 
 
 def year_heatmap() -> dict:
-    from calendar import monthrange
     from datetime import date, timedelta
 
     with get_conn() as conn:
@@ -127,16 +126,13 @@ def year_heatmap() -> dict:
         )
         rows = [{"day": r["day"], "tokens": int(r["tokens"] or 0)} for r in cur.fetchall()]
 
-    end = date.fromisoformat(rows[-1]["day"]) if rows else date.today()
-    end_year, end_month = end.year, end.month
-    start_month = end_month - 11
-    start_year = end_year
-    if start_month <= 0:
-        start_month += 12
-        start_year -= 1
-    start = date(start_year, start_month, 1)
-    end_last = monthrange(end_year, end_month)[1]
-    end = date(end_year, end_month, end_last)
+    last = date.fromisoformat(rows[-1]["day"]) if rows else date.today()
+    first = date.fromisoformat(rows[0]["day"]) if rows else (last - timedelta(days=364))
+
+    # Snap to full weeks: start on Monday (weekday=0) on or before first
+    start = first - timedelta(days=first.weekday())
+    # End on Sunday (weekday=6) on or after last
+    end = last + timedelta(days=(6 - last.weekday()))
 
     non_zero = sorted(r["tokens"] for r in rows if r["tokens"] > 0)
     if len(non_zero) >= 4:
@@ -160,6 +156,7 @@ def year_heatmap() -> dict:
     by_day = {r["day"]: r["tokens"] for r in rows}
     cells = []
     cur = start
+    week = 0
     while cur <= end:
         iso = cur.isoformat()
         tokens = by_day.get(iso, 0)
@@ -167,16 +164,20 @@ def year_heatmap() -> dict:
             "date": iso,
             "month": cur.month,
             "day": cur.day,
-            "dow": (cur.weekday() + 1) % 7,
+            "dow": cur.weekday(),
+            "week": week,
             "tokens": tokens,
             "level": level(tokens),
         })
+        if cur.weekday() == 6:
+            week += 1
         cur += timedelta(days=1)
 
     return {
         "range": [start.isoformat(), end.isoformat()],
         "levels": {"q1": q1, "q2": q2, "q3": q3},
         "cells": cells,
+        "weeks": week,
     }
 
 

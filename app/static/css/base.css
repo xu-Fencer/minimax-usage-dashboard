@@ -58,13 +58,13 @@ body {
 .block-toolbar button { padding: 2px 8px; font-size: 14px; cursor: pointer; }
 .section:hover .block-toolbar button { background: var(--primary); color: white; }
 
-.year-heatmap { display: grid; grid-template-columns: 30px 1fr; gap: 4px 8px; padding: 8px 0; align-items: start; }
-.year-heatmap .yh-months { grid-column: 2; grid-row: 1; display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; font-size: 11px; }
-.year-heatmap .yh-months span { text-align: left; }
+.year-heatmap { display: grid; grid-template-columns: 30px 1fr; gap: 4px 8px; padding: 8px 0; align-items: start; overflow-x: auto; }
+.year-heatmap .yh-months { grid-column: 2; grid-row: 1; display: grid; grid-auto-flow: column; grid-auto-columns: 11px; gap: 3px; font-size: 11px; }
+.year-heatmap .yh-months span { text-align: left; line-height: 11px; grid-row: 1; }
 .year-heatmap .yh-day-labels { grid-column: 1; grid-row: 2; display: grid; grid-template-rows: repeat(7, 11px); gap: 3px; font-size: 10px; }
 .year-heatmap .yh-day-labels span { line-height: 11px; }
-.year-heatmap .yh-grid { grid-column: 2; grid-row: 2; display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: repeat(7, 11px); gap: 3px; min-width: 700px; }
-.year-heatmap .yh-cell { width: 100%; height: 11px; border-radius: 2px; }
+.year-heatmap .yh-grid { grid-column: 2; grid-row: 2; display: grid; gap: 3px; min-width: 700px; }
+.year-heatmap .yh-cell { width: 11px; height: 11px; border-radius: 2px; }
 .year-heatmap .yh-empty { visibility: hidden; }
 [data-theme="dark"] .year-heatmap .yh-lv0 { background: #161b22; }
 [data-theme="dark"] .year-heatmap .yh-lv1 { background: #033a16; }

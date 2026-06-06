@@ -68,38 +68,47 @@ def test_year_heatmap(isolated_db):
     h = year_heatmap()
     assert h["range"] is not None
     start, end = h["range"]
-    # 12-month window: end is last day of data's month
-    assert end == "2026-05-31"
-    # Starts exactly 12 months before
-    assert start == "2025-06-01"
-    # Each cell has all required fields
+    # Range starts on Monday and ends on Sunday (full weeks)
+    from datetime import date
+    sd = date.fromisoformat(start)
+    ed = date.fromisoformat(end)
+    assert sd.weekday() == 0, "start should be Monday"
+    assert ed.weekday() == 6, "end should be Sunday"
     cells = h["cells"]
-    assert len(cells) > 0
+    # Each cell has week/dow
     for c in cells[:5]:
         assert "date" in c
         assert "month" in c
         assert "day" in c
         assert "dow" in c
+        assert "week" in c
         assert "tokens" in c
         assert "level" in c
+        assert 0 <= c["dow"] <= 6
         assert 0 <= c["level"] <= 4
     # Day with data has level >= 1
     may4 = next(c for c in cells if c["date"] == "2026-05-04")
     assert may4["tokens"] == 610
     assert may4["level"] >= 1
-    # Empty day has level 0
-    may3 = next(c for c in cells if c["date"] == "2026-05-03")
-    assert may3["tokens"] == 0
-    assert may3["level"] == 0
+    assert may4["dow"] == 0  # Monday
+    # Empty day in range has level 0 (e.g. Friday 5/8)
+    may8 = next(c for c in cells if c["date"] == "2026-05-08")
+    assert may8["tokens"] == 0
+    assert may8["level"] == 0
+    assert may8["dow"] == 4  # Friday
+    # Total cells = total days in range
+    assert len(cells) == (ed - sd).days + 1
 
 
 def test_year_heatmap_empty(isolated_db):
     h = year_heatmap()
     assert h["range"] is not None
-    # Even with no data, we render a 12-month window ending today
     start, end = h["range"]
-    assert end is not None
-    # All cells have level 0
+    from datetime import date
+    sd = date.fromisoformat(start)
+    ed = date.fromisoformat(end)
+    assert sd.weekday() == 0
+    assert ed.weekday() == 6
     for c in h["cells"]:
         assert c["level"] == 0
         assert c["tokens"] == 0

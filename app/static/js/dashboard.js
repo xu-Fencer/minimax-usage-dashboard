@@ -96,45 +96,46 @@ function renderYearHeatmap(yr) {
 
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const dayLabels = ["Mon", "Wed", "Fri"];
-  const startD = new Date(yr.range[0] + "T00:00:00");
-  const endD = new Date(yr.range[1] + "T00:00:00");
+  const totalWeeks = yr.weeks || (Math.max(...yr.cells.map(c => c.week)) + 1);
+
+  el.style.setProperty("--weeks", totalWeeks);
 
   const monthLabelsEl = document.createElement("div");
   monthLabelsEl.className = "yh-months";
-  let cur = new Date(startD);
-  while (cur <= endD) {
-    if (cur.getDate() === 1 || cur.getTime() === startD.getTime()) {
-      const span = document.createElement("span");
-      span.textContent = monthNames[cur.getMonth()];
-      monthLabelsEl.appendChild(span);
-    } else {
-      monthLabelsEl.appendChild(document.createElement("span"));
+  // Pre-create empty spans for each week, then set text on the one that starts each month
+  for (let w = 0; w < totalWeeks; w++) {
+    const span = document.createElement("span");
+    monthLabelsEl.appendChild(span);
+  }
+  // First week containing day 1 of a month gets the label
+  yr.cells.forEach(c => {
+    if (c.day === 1) {
+      const spans = monthLabelsEl.children;
+      if (spans[c.week]) {
+        spans[c.week].textContent = monthNames[c.month - 1];
+      }
     }
-    cur.setDate(cur.getDate() + 1);
-    if (monthLabelsEl.children.length >= 12) break;
-  }
-  while (monthLabelsEl.children.length < 12) {
-    monthLabelsEl.appendChild(document.createElement("span"));
-  }
+  });
   el.appendChild(monthLabelsEl);
 
   const dayLabelsEl = document.createElement("div");
   dayLabelsEl.className = "yh-day-labels";
   for (let i = 0; i < 7; i++) {
     const span = document.createElement("span");
-    if (i === 1 || i === 3 || i === 5) span.textContent = dayLabels[(i - 1) / 2];
+    if (i === 0 || i === 2 || i === 4) span.textContent = dayLabels[i / 2];
     dayLabelsEl.appendChild(span);
   }
   el.appendChild(dayLabelsEl);
 
-  const monthStart = startD.getMonth() + 1;
   const grid = document.createElement("div");
   grid.className = "yh-grid";
+  grid.style.gridTemplateColumns = `repeat(${totalWeeks}, 11px)`;
+  grid.style.gridTemplateRows = `repeat(7, 11px)`;
 
   yr.cells.forEach(c => {
     const cell = document.createElement("div");
     cell.className = `yh-cell yh-lv${c.level}`;
-    cell.style.gridColumn = (c.month - monthStart + 1 + (c.month < monthStart ? 12 : 0)).toString();
+    cell.style.gridColumn = (c.week + 1).toString();
     cell.style.gridRow = (c.dow + 1).toString();
     cell.dataset.date = c.date;
     cell.title = `${c.date}: ${fmtInt(c.tokens)} tokens`;
@@ -147,7 +148,7 @@ function renderYearHeatmap(yr) {
   legend.className = "yh-legend";
   const learn = document.createElement("a");
   learn.textContent = "Learn how we count contributions";
-  learn.onclick = (e) => { e.preventDefault(); toast("缓存命中等级: 0=无, 1=25%分位, 2=50%分位, 3=75%分位, 4=最高", "success"); };
+  learn.onclick = (e) => { e.preventDefault(); toast("等级: 0=无, 1=25%分位, 2=50%分位, 3=75%分位, 4=最高", "success"); };
   legend.appendChild(learn);
   const scale = document.createElement("div");
   scale.className = "yh-scale";
